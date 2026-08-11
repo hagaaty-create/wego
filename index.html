@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEGO | سيستم إدارة وحسابات صالون الحلاقة</title>
+    <!-- Google Fonts: Cairo & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-scissors brand-icon"></i>
+                </div>
+                <div class="brand-info">
+                    <h1>WEGO</h1>
+                    <span>نظام الحسابات والربط السحابي</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>لوحة التحكم</span>
+                </a>
+                <a href="#new-service" class="nav-item" data-tab="new-service">
+                    <i class="fa-solid fa-cash-register"></i>
+                    <span>تسجيل خدمة</span>
+                </a>
+                <a href="#staff" class="nav-item" data-tab="staff">
+                    <i class="fa-solid fa-users"></i>
+                    <span>الصنايعية والموظفين</span>
+                </a>
+                <a href="#deductions" class="nav-item" data-tab="deductions">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                    <span>الخصومات والسلف</span>
+                </a>
+                <a href="#expenses" class="nav-item" data-tab="expenses">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>المصاريف والبضاعة</span>
+                </a>
+                <a href="#reports" class="nav-item" data-tab="reports">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>التقارير والصفاية</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-status" id="firebase-sync-status">
+                    <span class="status-indicator"></span>
+                    <span>التخزين المحلي متصل</span>
+                </div>
+                <div class="sidebar-btn-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.openModal('firebaseModal')">
+                        <i class="fa-solid fa-fire text-warning"></i> إعدادات Firebase
+                    </button>
+                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.openModal('deployGuideModal')">
+                        <i class="fa-solid fa-rocket text-blue"></i> رفع على Vercel & Git
+                    </button>
+                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.resetToDemoData()">
+                        <i class="fa-solid fa-rotate-left"></i> بيانات تجريبية
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Bar -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h2 id="page-title">لوحة التحكم الرئيسية</h2>
+                    <p id="page-subtitle">ملخص الأداء المالي والحسابات اليومية لمحل wego</p>
+                </div>
+                <div class="header-actions">
+                    <!-- QUOTA SAVER CLOUD SYNC BUTTON -->
+                    <button class="btn btn-warning" onclick="wegoApp.triggerCloudSync()" title="توفير كوتة الفيربيز: رفع وحفظ البيانات في عملية واحدة">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> مزامنة مع السحابة ☁️
+                    </button>
+                    <button class="btn btn-primary" onclick="wegoApp.openModal('serviceModal')">
+                        <i class="fa-solid fa-plus"></i> خدمة جديدة
+                    </button>
+                    <button class="btn btn-secondary" onclick="wegoApp.openModal('expenseModal')">
+                        <i class="fa-solid fa-file-circle-plus"></i> إضافة مصروف
+                    </button>
+                </div>
+            </header>
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="dashboard-tab" class="tab-content active">
+                <!-- Summary KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card gold">
+                        <div class="kpi-icon"><i class="fa-solid fa-coins"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">إجمالي دخل اليوم</span>
+                            <h3 class="kpi-value" id="kpi-total-revenue">0 ج.م</h3>
+                            <span class="kpi-subtext" id="kpi-services-count">0 خدمة تم تسجيلها</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card blue">
+                        <div class="kpi-icon"><i class="fa-solid fa-user-gear"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">مستحقات الصنايعية (50%)</span>
+                            <h3 class="kpi-value" id="kpi-craftsmen-payout">0 ج.م</h3>
+                            <span class="kpi-subtext">قبل الخصومات والسلف</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card purple">
+                        <div class="kpi-icon"><i class="fa-solid fa-cash-register"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">عمولة الكاشير (5%)</span>
+                            <h3 class="kpi-value" id="kpi-cashier-commission">0 ج.م</h3>
+                            <span class="kpi-subtext">نسبة الكاشير اليومية</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card red">
+                        <div class="kpi-icon"><i class="fa-solid fa-basket-shopping"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">مصاريف المحل والمرافق</span>
+                            <h3 class="kpi-value" id="kpi-total-expenses">0 ج.م</h3>
+                            <span class="kpi-subtext">بضاعة، فواتير ونثريات</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card green featured">
+                        <div class="kpi-icon"><i class="fa-solid fa-vault"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">صافي أرباح المحل</span>
+                            <h3 class="kpi-value" id="kpi-net-shop-profit">0 ج.م</h3>
+                            <span class="kpi-subtext">المبلغ النهائي بعد الدفع والمصاريف</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions & Quick Staff Overview Grid -->
+                <div class="dashboard-grid">
+                    <div class="card grid-col-8">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> آخر الخدمات المسجلة اليوم</h3>
+                            <div class="header-actions">
+                                <button class="btn btn-sm btn-danger" onclick="wegoApp.purgeAllServices()" title="حذف وتفرغ جميع خدمات اليومية لتوفير قواعد البيانات">
+                                    <i class="fa-solid fa-trash-can"></i> تفريغ الخدمات
+                                </button>
+                                <button class="btn btn-sm btn-outline" onclick="wegoApp.switchTab('new-service')">عرض الكل</button>
+                            </div>
+                        </div>
+                        <div class="card-body padding-none">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>الوقت</th>
+                                            <th>الخدمة / الزبون</th>
+                                            <th>المبلغ</th>
+                                            <th>الصنايعي (50%)</th>
+                                            <th>المرافق</th>
+                                            <th>الكاشير (5%)</th>
+                                            <th>صافي المحل</th>
+                                            <th>حذف</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-services-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card grid-col-4">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fa-solid fa-user-check"></i> صفاية الصنايعية اليوم</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="staff-mini-list" id="dashboard-staff-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: NEW SERVICE / SALES ENTRY -->
+            <section id="new-service-tab" class="tab-content">
+                <div class="grid-2col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fa-solid fa-cash-register"></i> تسجيل عملية جديدة</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="new-service-form" onsubmit="wegoApp.handleCreateService(event)">
+                                <div class="form-group">
+                                    <label>اسم العميل (اختياري)</label>
+                                    <input type="text" id="service-customer" class="form-control" placeholder="مثال: زبون كريم / طارق">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>الخدمة المقدمة</label>
+                                    <select id="service-name-select" class="form-control" onchange="wegoApp.handleServicePresetChange(this)">
+                                        <option value="حلاقة شعر">حلاقة شعر (100 ج.م)</option>
+                                        <option value="حلاقة شعر وذقن">حلاقة شعر وذقن (150 ج.م)</option>
+                                        <option value="حلاقة ذقن والتنعيم">حلاقة ذقن والتنعيم (50 ج.م)</option>
+                                        <option value="سشوار ومكواة">سشوار ومكواة (60 ج.م)</option>
+                                        <option value="ماسك وحمام كريم">ماسك وحمام كريم (80 ج.م)</option>
+                                        <option value="صبغة شعر / ذقن">صبغة شعر / ذقن (200 ج.م)</option>
+                                        <option value="تنظيف بشرة متكامل">تنظيف بشرة متكامل (250 ج.م)</option>
+                                        <option value="custom">خدمة مخصصة (أدخل المبلغ)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>المبلغ الإجمالي (ج.م) *</label>
+                                        <input type="number" id="service-amount" class="form-control" value="100" min="1" required oninput="wegoApp.calculateLiveSplit()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>الكاشير المسؤول *</label>
+                                        <select id="service-cashier-select" class="form-control" required></select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>الصنايعي القائم بالخدمة *</label>
+                                        <select id="service-craftsman-select" class="form-control" required onchange="wegoApp.calculateLiveSplit()"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>المرافق / المساعد (اختياري)</label>
+                                        <select id="service-assistant-select" class="form-control" onchange="wegoApp.calculateLiveSplit()">
+                                            <option value="">بدون مرافق</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="calculation-box">
+                                    <h4><i class="fa-solid fa-calculator"></i> توزيع الحسبة التلقائي:</h4>
+                                    <div class="calc-row">
+                                        <span>دخل الصنايعي المباشر (50%):</span>
+                                        <strong id="live-craftsman-share" class="text-gold">50 ج.م</strong>
+                                    </div>
+                                    <div class="calc-row" id="live-assistant-row" style="display: none;">
+                                        <span>حصة المرافق:</span>
+                                        <strong id="live-assistant-share" class="text-blue">0 ج.م</strong>
+                                    </div>
+                                    <div class="calc-row">
+                                        <span>عمولة الكاشير (5%):</span>
+                                        <strong id="live-cashier-share" class="text-purple">5 ج.م</strong>
+                                    </div>
+                                    <div class="calc-row highlight">
+                                        <span>صافي دخل المحل المتبقي:</span>
+                                        <strong id="live-shop-share" class="text-green">45 ج.م</strong>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-lg btn-block margin-top-md">
+                                    <i class="fa-solid fa-check-circle"></i> تأكيد وحفظ الخدمة
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fa-solid fa-list-check"></i> قائمة خدمات اليوم تفصيلياً</h3>
+                            <div class="search-box">
+                                <input type="text" id="service-search-input" placeholder="بحث بالصنايعي..." onkeyup="wegoApp.filterServicesTable()">
+                            </div>
+                        </div>
+                        <div class="card-body padding-none">
+                            <div class="table-responsive">
+                                <table class="table" id="all-services-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>الخدمة</th>
+                                            <th>الصنايعي</th>
+                                            <th>الإجمالي</th>
+                                            <th>مستحق الصنايعي</th>
+                                            <th>حذف</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="all-services-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: STAFF & CRAFTSMEN MANAGEMENT -->
+            <section id="staff-tab" class="tab-content">
+                <div class="section-header">
+                    <h3>فريق العمل والصنايعية والمرافقين والكاشير</h3>
+                    <button class="btn btn-primary" onclick="wegoApp.openModal('staffModal')">
+                        <i class="fa-solid fa-user-plus"></i> إضافة موظف / صنايعي
+                    </button>
+                </div>
+
+                <div class="staff-cards-grid" id="staff-cards-container"></div>
+            </section>
+
+            <!-- TAB 4: DEDUCTIONS & ADVANCES -->
+            <section id="deductions-tab" class="tab-content">
+                <div class="section-header">
+                    <div>
+                        <h3>إدارة الخصومات والسلفيات</h3>
+                        <p class="text-muted">خصم المبالغ والسلف المباشرة من حساب الموظف أو الصنايعي أو الكاشير</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-danger" onclick="wegoApp.purgeAllDeductions()" title="تفريغ جدول الخصومات لتوفير المساحة وقواعد البيانات">
+                            <i class="fa-solid fa-trash-can"></i> مسح جميع الخصومات
+                        </button>
+                        <button class="btn btn-warning" onclick="wegoApp.openModal('deductionModal')">
+                            <i class="fa-solid fa-plus-circle"></i> تسجيل خصم / سلفة جديدة
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body padding-none">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>التاريخ والوقت</th>
+                                        <th>اسم الموظف / الصنايعي</th>
+                                        <th>الوظيفة</th>
+                                        <th>مبلغ الخصم</th>
+                                        <th>سبب الخصم / السلفة</th>
+                                        <th>حذف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deductions-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: EXPENSES & UTILITIES -->
+            <section id="expenses-tab" class="tab-content">
+                <div class="section-header">
+                    <div>
+                        <h3>مصاريف المحل والبضاعة المشتراه</h3>
+                        <p class="text-muted">سجل الكهرباء، المياه، الإنترنت، وتجهيزات الشغل والمشتريات</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-danger" onclick="wegoApp.purgeAllExpenses()" title="مسح وتفريغ المصاريف القديمة لتوفير قواعد البيانات">
+                            <i class="fa-solid fa-trash-can"></i> تفريغ المصاريف
+                        </button>
+                        <button class="btn btn-secondary" onclick="wegoApp.openModal('expenseModal')">
+                            <i class="fa-solid fa-cart-plus"></i> إضافة مصروف / مشتريات
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body padding-none">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>التاريخ</th>
+                                        <th>تصنيف المصروف</th>
+                                        <th>البيان / الوصف</th>
+                                        <th>المبلغ الإجمالي</th>
+                                        <th>طريقة الدفع</th>
+                                        <th>حذف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenses-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: REPORTS & DAILY SETTLEMENT -->
+            <section id="reports-tab" class="tab-content">
+                <div class="section-header">
+                    <div>
+                        <h3>التقارير المالية والتصفية اليومية</h3>
+                        <p class="text-muted">صرف مستحقات الصنايعية والكاشير وتجميع أرباح المحل وحذف التقرير القديم</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-danger" onclick="wegoApp.purgeTodayLog()" title="مسح وحذف سجل التقارير اليومية لتوفير قاعدة البيانات والفيربيز">
+                            <i class="fa-solid fa-trash-can"></i> حذف وتفريغ تقرير اليومية 🗑️
+                        </button>
+                        <button class="btn btn-outline" onclick="window.print()">
+                            <i class="fa-solid fa-print"></i> طباعة كشف اليومية
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settlement-grid">
+                    <div class="card grid-col-12">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fa-solid fa-calculator"></i> صفاية حسابات اليوم لكل صنايعي وموظف</h3>
+                        </div>
+                        <div class="card-body padding-none">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>الموظف</th>
+                                            <th>الرتبة</th>
+                                            <th>إجمالي الدخل</th>
+                                            <th>النسبة المستحقة</th>
+                                            <th>الخصومات والسلف</th>
+                                            <th>الصافي المستحق للصرف</th>
+                                            <th>الحالة</th>
+                                            <th>صرف وإيصال</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="settlement-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: FIREBASE CONFIGURATION -->
+    <div class="modal" id="firebaseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-fire text-warning"></i> إعدادات سحابة Firebase (توفير الكوتة المجانية)</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('firebaseModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
+                    أدخل مفاتيح مشروع Firebase الخاص بك للربط السحابي. يعمل السيستم بنظام <strong>Offline-First Batching</strong> الذي يرفع البيانات بضغطة زر واحدة لمنع استهلاك الكوتة المجانية (50,000 قراءة و 20,000 كتابة مجاناً يومياً).
+                </p>
+                <form onsubmit="wegoApp.handleSaveFirebaseConfig(event)">
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="text" id="fb-apiKey" class="form-control" placeholder="AIzaSy...">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Auth Domain</label>
+                            <input type="text" id="fb-authDomain" class="form-control" placeholder="project-id.firebaseapp.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Project ID</label>
+                            <input type="text" id="fb-projectId" class="form-control" placeholder="project-id">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Storage Bucket</label>
+                            <input type="text" id="fb-storageBucket" class="form-control" placeholder="project-id.appspot.com">
+                        </div>
+                        <div class="form-group">
+                            <label>App ID</label>
+                            <input type="text" id="fb-appId" class="form-control" placeholder="1:123456789:web:abcdef">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block margin-top-md">حفظ وإقران السحابة ☁️</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GITHUB & VERCEL DEPLOY GUIDE -->
+    <div class="modal" id="deployGuideModal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-rocket text-blue"></i> خطوات رفع السيستم على GitHub & Vercel مجاناً 100%</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('deployGuideModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.9rem; line-height: 1.8;">
+                <ol style="padding-right: 1.2rem;">
+                    <li><strong>إنشاء مستودع GitHub جديد:</strong>
+                        <br>ادخل على <a href="https://github.com/new" target="_blank" class="text-gold">GitHub.com/new</a> وأنشئ مستودعاً باسم <code>wego-barber-system</code>.
+                    </li>
+                    <li><strong>رفع الكود من جهازك:</strong>
+                        <br>افتح التيرمينال (PowerShell) في مجلد المشروع ونفذ الأوامر التالية:
+                        <pre style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; margin: 6px 0; color: var(--gold-light); direction: ltr; text-align: left;">
+git init
+git add .
+git commit -m "Initial WEGO Barber System with Firebase"
+git branch -M main
+git remote add origin YOUR_GITHUB_REPO_URL
+git push -u origin main
+                        </pre>
+                    </li>
+                    <li><strong>الربط والنشر على Vercel بنقرة واحدة:</strong>
+                        <br>افتح موقع <a href="https://vercel.com/new" target="_blank" class="text-gold">Vercel.com/new</a> وسجل بحساب GitHub الخاص بك.
+                    </li>
+                    <li>اختر مشروع <code>wego-barber-system</code> وانقر <strong>Deploy</strong>! سينطلق موقعك فوراً مع رابط مجاني ومدى الحياة (https://wego-barber.vercel.app).</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS: SERVICE, STAFF, DEDUCTION, EXPENSE -->
+    <div class="modal" id="serviceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-scissors text-gold"></i> إضافة خدمة سريعة</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('serviceModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="wegoApp.handleCreateServiceModal(event)">
+                    <div class="form-group">
+                        <label>الخدمة</label>
+                        <input type="text" id="modal-service-name" class="form-control" placeholder="حلاقة شعر / ذقن / ماسك..." required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>المبلغ (ج.م)</label>
+                            <input type="number" id="modal-service-amount" class="form-control" value="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label>الصنايعي</label>
+                            <select id="modal-service-craftsman" class="form-control" required></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>المرافق (إن وجد)</label>
+                            <select id="modal-service-assistant" class="form-control"><option value="">بدون</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>الكاشير</label>
+                            <select id="modal-service-cashier" class="form-control" required></select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block margin-top-md">حفظ الخدمة</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="staffModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus text-gold"></i> إضافة فرد جديد للفريق</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('staffModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="wegoApp.handleCreateStaff(event)">
+                    <div class="form-group">
+                        <label>الاسم الكامل *</label>
+                        <input type="text" id="staff-name-input" class="form-control" placeholder="مثال: الأسطى إبراهيم" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>نوع الوظيفة *</label>
+                            <select id="staff-role-input" class="form-control" required onchange="wegoApp.adjustDefaultCommission(this)">
+                                <option value="craftsman">صنايعي حلاقة (Craftsman)</option>
+                                <option value="assistant">مرافق / مساعد (Assistant)</option>
+                                <option value="cashier">كاشير (Cashier)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>النسبة المئوية المخصصة (%)</label>
+                            <input type="number" id="staff-rate-input" class="form-control" value="50" min="0" max="100" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>رقم الهاتف (اختياري)</label>
+                        <input type="text" id="staff-phone-input" class="form-control" placeholder="01xxxxxxxxx">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block margin-top-md">إضافة الموظف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deductionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-hand-holding-dollar text-warning"></i> تسجيل خصم / سلفة</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('deductionModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="wegoApp.handleCreateDeduction(event)">
+                    <div class="form-group">
+                        <label>اختر الموظف / الصنايعي / الكاشير *</label>
+                        <select id="deduction-staff-select" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>مبلغ الخصم أو السلفة (ج.م) *</label>
+                        <input type="number" id="deduction-amount-input" class="form-control" min="1" placeholder="مثال: 50" required>
+                    </div>
+                    <div class="form-group">
+                        <label>السبب والبيان *</label>
+                        <input type="text" id="deduction-reason-input" class="form-control" placeholder="مثال: تأخير صباحي / سلفة نقدية / كسر أدوات" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-block margin-top-md">خصم المبلغ من المستحقات</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="expenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-receipt text-secondary"></i> تسجيل مصروف / بضاعة</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('expenseModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="wegoApp.handleCreateExpense(event)">
+                    <div class="form-group">
+                        <label>تصنيف المصروف *</label>
+                        <select id="expense-category-select" class="form-control" required>
+                            <option value="مرافق (كهرباء/ماء/إنترنت)">مرافق (كهرباء / مياه / إنترنت)</option>
+                            <option value="بضاعة ومستلزمات شغيلة">بضاعة ومستلزمات (كريمات/شفرات/زيوت)</option>
+                            <option value="صيانة وأدوات">صيانة وأدوات ومعدات</option>
+                            <option value="ضيافة ومشروبات">ضيافة ومشروبات للزبائن</option>
+                            <option value="إيجار ونثريات">إيجار ونثريات أخرى</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>البيان / التفاصيل *</label>
+                        <input type="text" id="expense-title-input" class="form-control" placeholder="مثال: شراء كرتونة كريم وشفرات جيليت" required>
+                    </div>
+                    <div class="form-group">
+                        <label>المبلغ المدفوع (ج.م) *</label>
+                        <input type="number" id="expense-amount-input" class="form-control" min="1" placeholder="150" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-block margin-top-md">إضافة الخزينة</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINT RECEIPT AREA -->
+    <div id="print-area" class="print-area">
+        <div class="print-header">
+            <h2>WEGO BARBER SHOP</h2>
+            <p>سيستم حسابات وتقارير الصالون</p>
+            <hr>
+            <p id="print-date">تاريخ الصفاية: </p>
+        </div>
+        <div id="print-content"></div>
+        <div class="print-footer">
+            <hr>
+            <p>شكراً لاستخدامكم نظام WEGO للحسابات</p>
+        </div>
+    </div>
+
+    <!-- Script imports -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
