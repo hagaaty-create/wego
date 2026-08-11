@@ -59,14 +59,8 @@
                     <span>التخزين المحلي متصل</span>
                 </div>
                 <div class="sidebar-btn-group" style="display: flex; flex-direction: column; gap: 6px;">
-                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.openModal('firebaseModal')">
-                        <i class="fa-solid fa-fire text-warning"></i> إعدادات Firebase
-                    </button>
-                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.openModal('deployGuideModal')">
-                        <i class="fa-solid fa-rocket text-blue"></i> رفع على Vercel & Git
-                    </button>
-                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.resetToDemoData()">
-                        <i class="fa-solid fa-rotate-left"></i> بيانات تجريبية
+                    <button class="btn btn-outline btn-sm btn-block" onclick="wegoApp.openModal('settingsModal')">
+                        <i class="fa-solid fa-gear"></i> الإعدادات
                     </button>
                 </div>
             </div>
@@ -81,10 +75,7 @@
                     <p id="page-subtitle">ملخص الأداء المالي والحسابات اليومية لمحل wego</p>
                 </div>
                 <div class="header-actions">
-                    <!-- QUOTA SAVER CLOUD SYNC BUTTON -->
-                    <button class="btn btn-warning" onclick="wegoApp.triggerCloudSync()" title="توفير كوتة الفيربيز: رفع وحفظ البيانات في عملية واحدة">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> مزامنة مع السحابة ☁️
-                    </button>
+                    <!-- QUOTA SAVER AUTO SYNC IS ACTIVE -->
                     <button class="btn btn-primary" onclick="wegoApp.openModal('serviceModal')">
                         <i class="fa-solid fa-plus"></i> خدمة جديدة
                     </button>
@@ -430,17 +421,26 @@
         </main>
     </div>
 
-    <!-- MODAL: FIREBASE CONFIGURATION -->
-    <div class="modal" id="firebaseModal">
+    <!-- MODAL: SETTINGS -->
+    <div class="modal" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-fire text-warning"></i> إعدادات سحابة Firebase (توفير الكوتة المجانية)</h3>
-                <button class="close-modal" onclick="wegoApp.closeModal('firebaseModal')">&times;</button>
+                <h3><i class="fa-solid fa-gear"></i> الإعدادات والتخزين</h3>
+                <button class="close-modal" onclick="wegoApp.closeModal('settingsModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
-                    أدخل مفاتيح مشروع Firebase الخاص بك للربط السحابي. يعمل السيستم بنظام <strong>Offline-First Batching</strong> الذي يرفع البيانات بضغطة زر واحدة لمنع استهلاك الكوتة المجانية (50,000 قراءة و 20,000 كتابة مجاناً يومياً).
-                </p>
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <h4 style="margin-bottom: 10px;"><i class="fa-solid fa-database"></i> إدارة البيانات</h4>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button class="btn btn-outline btn-block" onclick="wegoApp.exportData()">تصدير البيانات (Backup)</button>
+                        <button class="btn btn-outline btn-block" onclick="document.getElementById('import-file').click()">استيراد البيانات</button>
+                        <input type="file" id="import-file" style="display: none;" accept=".json" onchange="wegoApp.importData(this)">
+                    </div>
+                    <button class="btn btn-danger btn-block" onclick="wegoApp.clearFirebaseData()"><i class="fa-solid fa-trash"></i> حذف البيانات من الفاير باز لتوفير الكوتة</button>
+                </div>
+
+                <h4 style="margin-bottom: 10px;"><i class="fa-solid fa-fire text-warning"></i> إعدادات سحابة Firebase</h4>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">أدخل مفاتيح مشروع Firebase الخاص بك للربط السحابي. المزامنة تعمل الآن تلقائياً مع كل حفظ للبيانات محلياً.</p>
                 <form onsubmit="wegoApp.handleSaveFirebaseConfig(event)">
                     <div class="form-group">
                         <label>API Key</label>
@@ -468,38 +468,6 @@
                     </div>
                     <button type="submit" class="btn btn-primary btn-block margin-top-md">حفظ وإقران السحابة ☁️</button>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: GITHUB & VERCEL DEPLOY GUIDE -->
-    <div class="modal" id="deployGuideModal">
-        <div class="modal-content" style="max-width: 650px;">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-rocket text-blue"></i> خطوات رفع السيستم على GitHub & Vercel مجاناً 100%</h3>
-                <button class="close-modal" onclick="wegoApp.closeModal('deployGuideModal')">&times;</button>
-            </div>
-            <div class="modal-body" style="font-size: 0.9rem; line-height: 1.8;">
-                <ol style="padding-right: 1.2rem;">
-                    <li><strong>إنشاء مستودع GitHub جديد:</strong>
-                        <br>ادخل على <a href="https://github.com/new" target="_blank" class="text-gold">GitHub.com/new</a> وأنشئ مستودعاً باسم <code>wego-barber-system</code>.
-                    </li>
-                    <li><strong>رفع الكود من جهازك:</strong>
-                        <br>افتح التيرمينال (PowerShell) في مجلد المشروع ونفذ الأوامر التالية:
-                        <pre style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; margin: 6px 0; color: var(--gold-light); direction: ltr; text-align: left;">
-git init
-git add .
-git commit -m "Initial WEGO Barber System with Firebase"
-git branch -M main
-git remote add origin YOUR_GITHUB_REPO_URL
-git push -u origin main
-                        </pre>
-                    </li>
-                    <li><strong>الربط والنشر على Vercel بنقرة واحدة:</strong>
-                        <br>افتح موقع <a href="https://vercel.com/new" target="_blank" class="text-gold">Vercel.com/new</a> وسجل بحساب GitHub الخاص بك.
-                    </li>
-                    <li>اختر مشروع <code>wego-barber-system</code> وانقر <strong>Deploy</strong>! سينطلق موقعك فوراً مع رابط مجاني ومدى الحياة (https://wego-barber.vercel.app).</li>
-                </ol>
             </div>
         </div>
     </div>

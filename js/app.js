@@ -3,91 +3,10 @@
  */
 
 const INITIAL_DEMO_DATA = {
-    staff: [
-        { id: 'stf-1', name: 'الأسطى محمود', role: 'craftsman', rate: 50, phone: '01012345678', settledToday: false },
-        { id: 'stf-2', name: 'الأسطى سيد', role: 'craftsman', rate: 50, phone: '01122334455', settledToday: false },
-        { id: 'stf-3', name: 'الأسطى طارق', role: 'craftsman', rate: 50, phone: '01299887766', settledToday: false },
-        { id: 'stf-4', name: 'كريم المساعد', role: 'assistant', rate: 5, phone: '01511223344', settledToday: false },
-        { id: 'stf-5', name: 'سامح الكاشير', role: 'cashier', rate: 5, phone: '01000112233', settledToday: false }
-    ],
-    services: [
-        {
-            id: 'srv-101',
-            time: '12:30 م',
-            customer: 'زبون كريم',
-            serviceName: 'حلاقة شعر وذقن',
-            amount: 150,
-            craftsmanId: 'stf-1',
-            assistantId: 'stf-4',
-            cashierId: 'stf-5',
-            craftsmanShare: 75,
-            assistantShare: 7.5,
-            cashierShare: 7.5,
-            shopShare: 60
-        },
-        {
-            id: 'srv-102',
-            time: '01:15 م',
-            customer: 'عمرو',
-            serviceName: 'حلاقة شعر',
-            amount: 100,
-            craftsmanId: 'stf-2',
-            assistantId: '',
-            cashierId: 'stf-5',
-            craftsmanShare: 50,
-            assistantShare: 0,
-            cashierShare: 5,
-            shopShare: 45
-        },
-        {
-            id: 'srv-103',
-            time: '02:40 م',
-            customer: 'الأستاذ أحمد',
-            serviceName: 'تنظيف بشرة متكامل',
-            amount: 250,
-            craftsmanId: 'stf-3',
-            assistantId: 'stf-4',
-            cashierId: 'stf-5',
-            craftsmanShare: 125,
-            assistantShare: 12.5,
-            cashierShare: 12.5,
-            shopShare: 100
-        }
-    ],
-    deductions: [
-        {
-            id: 'ded-1',
-            time: '11:00 ص',
-            staffId: 'stf-1',
-            amount: 20,
-            reason: 'خصم تأخير ساعة عن الموعد'
-        },
-        {
-            id: 'ded-2',
-            time: '01:30 م',
-            staffId: 'stf-4',
-            amount: 10,
-            reason: 'سلفة نقدية سريعة'
-        }
-    ],
-    expenses: [
-        {
-            id: 'exp-1',
-            time: '10:30 ص',
-            category: 'بضاعة ومستلزمات شغيلة',
-            title: 'شراء كرتونة كريمات وشفرات ومناشف',
-            amount: 120,
-            paymentMethod: 'كاش'
-        },
-        {
-            id: 'exp-2',
-            time: '03:00 م',
-            category: 'مرافق (كهرباء/ماء/إنترنت)',
-            title: 'فاتورة إنترنت ومشروبات ضيافة',
-            amount: 50,
-            paymentMethod: 'كاش'
-        }
-    ]
+    staff: [],
+    services: [],
+    deductions: [],
+    expenses: []
 };
 
 class WegoBarberApp {
@@ -109,13 +28,44 @@ class WegoBarberApp {
     saveData() {
         localStorage.setItem('wego_barber_data', JSON.stringify(this.data));
         this.renderAll();
+        // Auto Sync
+        if (window.WegoFirebase?.initialized) {
+            window.WegoFirebase.syncAllToCloud(this.data);
+        }
     }
 
-    resetToDemoData() {
-        if (confirm("هل أنت تأكد من استعادة البيانات التجريبية للمحل؟ (سوف يتم مسح التعديلات الحالية)")) {
-            this.data = JSON.parse(JSON.stringify(INITIAL_DEMO_DATA));
-            this.saveData();
-            alert("تمت استعادة البيانات التجريبية بنجاح!");
+    exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", "wego_backup.json");
+        dlAnchorElem.click();
+    }
+
+    importData(fileInput) {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                this.data = JSON.parse(e.target.result);
+                this.saveData();
+                alert("تم استيراد البيانات بنجاح!");
+            } catch (err) {
+                alert("ملف غير صالح.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async clearFirebaseData() {
+        if (!window.WegoFirebase?.initialized) {
+            alert("يرجى إدخال مفاتيح Firebase أولاً.");
+            return;
+        }
+        if (confirm("تحذير: سيتم مسح جميع البيانات من السحابة (Firebase) نهائياً لتوفير الكوتة. هل أنت متأكد؟")) {
+            await window.WegoFirebase.clearCloudData();
+            alert("تم مسح بيانات السحابة بنجاح!");
         }
     }
 
@@ -183,8 +133,8 @@ class WegoBarberApp {
     // FIREBASE CLOUD SYNC & QUOTA SAVER
     async triggerCloudSync() {
         if (!window.WegoFirebase?.initialized) {
-            this.openModal('firebaseModal');
-            alert("يرجى إدخال مفاتيح Firebase أولاً لتمثيل الاتصال السحابي.");
+            this.openModal('settingsModal');
+            alert("يرجى إدخال مفاتيح Firebase أولاً.");
             return;
         }
         await window.WegoFirebase.syncAllToCloud(this.data);

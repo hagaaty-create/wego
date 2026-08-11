@@ -135,6 +135,25 @@ window.WegoFirebase = {
             alert("خطأ أثناء جلب البيانات: " + e.message);
         }
         return null;
+    },
+
+    /**
+     * Clear Cloud Data (Quota Saver)
+     */
+    async clearCloudData() {
+        if (!this.initialized || !this.db) {
+            return false;
+        }
+        try {
+            const { doc, deleteDoc } = this.firestoreOps;
+            const todayStr = new Date().toISOString().split('T')[0];
+            const docRef = doc(this.db, "wego_daily_logs", todayStr);
+            await deleteDoc(docRef);
+            return true;
+        } catch (e) {
+            console.error("Firestore Delete Error:", e);
+            return false;
+        }
     }
 };
 
